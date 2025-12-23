@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="mn">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Усны төлөвийн өөрчлөлт — Интерактив самбар (3D)</title>
+    <style>
+      /* Basic, self-contained styling (no external deps) */
+      :root {
+        color-scheme: light dark;
+        --bg: #0b0c0f;
+        --fg: #e6eef9;
+        --muted: #a6b3c6;
+        --accent: #3da9fc;
+        --ice: #8fd3ff;
+        --water: #3ba1ff;
+        --steam: #cfe8ff;
+        --card: #111316;
+        --border: #1b1e24;
+      }
+
+      @media (prefers-color-scheme: light) {
+        :root {
+          --bg: #f7f7fa;
+          --fg: #0b0c0f;
+          --muted: #4b5565;
+          --accent: #0b74d1;
+          --ice: #8fd3ff;
+          --water: #0b74d1;
+          --steam: #6fa8ff;
+          --card: #ffffff;
+          --border: #e6e8ef;
+        }
+      }
+
+      html,
+      body {
+        height: 100%;
+      }
+      body {
+        margin: 0;
+        font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu,
+          Cantarell, Noto Sans, Helvetica, Arial, "Apple Color Emoji",
+          "Segoe UI Emoji";
+        background: var(--bg);
+        color: var(--fg);
+        display: grid;
+        place-items: center;
+      }
+
+      .container {
+        width: min(720px, 94vw);
+        box-sizing: border-box;
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 20px 20px 24px;
+        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.25);
+      }
+
+      .header {
+        display: flex;
+        align-items: baseline;
+        gap: 12px;
+      }
+      .header h1 {
+        font-size: 1.2rem;
+        margin: 0;
+      }
+      .header .course {
+        color: var(--muted);
+        font-size: 0.9rem;
+      }
+
+      .controls {
+        margin-top: 14px;
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 12px 16px;
+        align-items: center;
+      }
+
+      .output {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .temp-value {
+        font-variant-numeric: tabular-nums;
+      }
+      .state-badge {
+        padding: 4px 10px;
+        border-radius: 999px;
+        border: 1px solid var(--border);
+        background: color-mix(in oklab, var(--card), var(--accent) 8%);
+      }
+
+      .slider-wrap {
+        grid-column: 1 / -1;
+        display: grid;
+        gap: 6px;
+      }
+      .slider-wrap label {
+        color: var(--muted);
+        font-size: 0.9rem;
+      }
+      input[type="range"] {
+        width: 100%;
+        appearance: none;
+        height: 4px;
+        border-radius: 999px;
+        background: linear-gradient(
+          90deg,
+          var(--ice),
+          var(--water) 55%,
+          var(--steam)
+        );
+        outline: none;
+      }
+      input[type="range"]::-webkit-slider-thumb {
+        appearance: none;
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        background: var(--accent);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        border: 2px solid white;
+      }
+      input[type="range"]::-moz-range-thumb {
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        background: var(--accent);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        border: 2px solid white;
+      }
+
+      .scene {
+        margin-top: 16px;
+        display: grid;
+        place-items: center;
+      }
+      .scene canvas {
+        width: min(560px, 92vw);
+        height: 340px;
+        display: block;
+        border-radius: 12px;
+        border: 1px solid var(--border);
+        background: linear-gradient(
+          180deg,
+          rgba(0, 0, 0, 0.25),
+          rgba(0, 0, 0, 0.45)
+        );
+      }
+      .scene svg {
+        width: min(380px, 90vw);
+        height: auto;
+      }
+
+      /* Scene state variables */
+      #scene {
+        --temp: 20; /* current temperature */
+        --water-level: 0.55; /* 0..1 fraction */
+        --ice-alpha: 0; /* 0..1 visibility */
+        --steam-alpha: 0; /* 0..1 visibility */
+      }
+
+      /* Water fill animation via translateY */
+      .water {
+        transform-box: fill-box;
+        transform-origin: bottom;
+        transform: translateY(calc((1 - var(--water-level)) * 140px));
+      }
+      .water rect {
+        fill: var(--water);
+        opacity: 0.9;
+      }
+
+      /* Ice cubes visibility */
+      .ice rect {
+        fill: var(--ice);
+        opacity: calc(0.25 + var(--ice-alpha) * 0.75);
+      }
+
+      /* Steam plumes visibility + breathing */
+      @keyframes drift {
+        0% {
+          transform: translateY(0) translateX(0) scale(1);
+          opacity: 0.2;
+        }
+        50% {
+          transform: translateY(-8px) translateX(6px) scale(1.05);
+          opacity: 0.5;
+        }
+        100% {
+          transform: translateY(-14px) translateX(12px) scale(1.1);
+          opacity: 0.2;
+        }
+      }
+      .steam circle {
+        fill: var(--steam);
+        opacity: calc(var(--steam-alpha) * 0.8);
+      }
+      .steam g {
+        animation: drift 3.2s ease-in-out infinite;
+      }
+      .steam g:nth-child(2) {
+        animation-duration: 3.8s;
+        animation-delay: 0.2s;
+      }
+      .steam g:nth-child(3) {
+        animation-duration: 4.6s;
+        animation-delay: 0.4s;
+      }
+
+      /* State badge coloring */
+      #scene[data-state="ice"] ~ .legend .state-badge {
+        color: var(--ice);
+        border-color: color-mix(in oklab, var(--ice), black 85%);
+      }
+      #scene[data-state="water"] ~ .legend .state-badge {
+        color: var(--water);
+        border-color: color-mix(in oklab, var(--water), black 85%);
+      }
+      #scene[data-state="steam"] ~ .legend .state-badge {
+        color: var(--steam);
+        border-color: color-mix(in oklab, var(--steam), black 85%);
+      }
+
+      .legend {
+        margin-top: 8px;
+        font-size: 0.92rem;
+        color: var(--muted);
+      }
+
+      noscript {
+        display: block;
+        margin-top: 16px;
+        padding: 12px;
+        border-radius: 10px;
+        background: color-mix(in oklab, var(--card), var(--accent) 6%);
+        border: 1px dashed var(--border);
+      }
+    </style>
+  </head>
+  <body>
+    <main class="container" aria-labelledby="title">
+      <div class="header">
+        <h1 id="title">Усны төлөвийн өөрчлөлт (Интерактив самбар)</h1>
+        <span class="course">Хичээл: Физик · Биологи</span>
+      </div>
+
+      <div class="controls" role="group" aria-label="Температурын удирдлага">
+        <div class="output" aria-live="polite">
+          <strong class="temp-value" id="tempValue">20 °C</strong>
+          <span class="state-badge" id="stateLabel">Ус</span>
+        </div>
+        <button type="button" id="resetBtn" title="Анхны байдал">
+          Дахин тохируулах
+        </button>
+
+        <div class="slider-wrap">
+          <label for="temp">Температурыг өөрчилнө үү (−50°C → 150°C)</label>
+          <input
+            id="temp"
+            type="range"
+            min="-50"
+            max="150"
+            step="1"
+            value="20"
+            aria-label="Температурын слайдер"
+          />
+        </div>
+      </div>
+
+      <section class="scene">
+        <!-- Pure SVG scene: beaker + water + ice + steam (no external libs) -->
+        <svg
+          id="state-svg"
+          viewBox="0 0 280 240"
+          role="img"
+          aria-label="Усны төлөвийн визуал"
+        >
+          <title>Усны төлөвийн визуал (SVG)</title>
+          <defs>
+            <!-- Glass rim subtle gradient stroke -->
+            <linearGradient id="glassStrokeGrad" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0%" stop-color="#c7d2e1" stop-opacity="0.55" />
+              <stop offset="50%" stop-color="#e6ecf5" stop-opacity="0.9" />
+              <stop offset="100%" stop-color="#c7d2e1" stop-opacity="0.55" />
+            </linearGradient>
+            <!-- Water fill gradient -->
+            <linearGradient id="waterGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#a6d8ff" />
+              <stop offset="60%" stop-color="#4aa9ff" />
+              <stop offset="100%" stop-color="#2f82dd" />
+            </linearGradient>
+            <!-- Bubble gradient -->
+            <radialGradient id="bubbleGrad" cx="0.3" cy="0.3" r="0.9">
+              <stop offset="0%" stop-color="#ffffff" stop-opacity="0.95" />
+              <stop offset="70%" stop-color="#ffffff" stop-opacity="0.45" />
+              <stop offset="100%" stop-color="#ffffff" stop-opacity="0" />
+            </radialGradient>
+            <!-- Soft steam blur -->
+            <filter id="steamBlur" x="-20%" y="-20%" width="140%" height="140%">
+              <feGaussianBlur stdDeviation="4" />
+            </filter>
+            <!-- Beaker interior clip -->
+            <clipPath id="beakerClip">
+              <path
+                d="M70 20 V210 Q70 225 85 225 H195 Q210 225 210 210 V20 Z"
+              />
+            </clipPath>
+          </defs>
+          <style>
+            /* SVG-scoped styles using CSS variables updated by JS */
+            .beaker {
+              stroke: url(#glassStrokeGrad);
+              stroke-width: 6;
+              fill: none;
+              opacity: 0.85;
+            }
+            .water {
+              transform-box: fill-box;
+              transform-origin: 140px 225px;
+              transform: scaleY(var(--water-level, 0.65));
+            }
+            .water rect {
+              fill: url(#waterGrad);
+            }
+            .waves path {
+              stroke: rgba(255, 255, 255, 0.75);
+              stroke-width: 2;
+              fill: none;
+            }
+            .ice {
+              opacity: var(--ice-alpha, 0);
+            }
+            .ice rect,
+            .ice polygon {
+              fill: #dff3ff;
+              stroke: rgba(255, 255, 255, 0.85);
+              stroke-width: 0.6;
+            }
+            .frost {
+              opacity: var(--frost-alpha, 0);
+              fill: #eaf6ff;
+            }
+            .steam-soft {
+              opacity: var(--steam-alpha, 0);
+              filter: url(#steamBlur);
+            }
+            .steam-soft circle {
+              fill: #f1f7ff;
+              animation: puff 6s ease-in-out infinite;
+            }
+            .bubbles {
+              opacity: var(--bubble-alpha, 0.5);
+            }
+            .bubbles circle {
+              fill: url(#bubbleGrad);
+              animation: rise 6s ease-in infinite;
+            }
+
+            @keyframes puff {
+              0% {
+                transform: translateY(8px);
+                opacity: 0;
+              }
+              20% {
+                opacity: 0.6;
+              }
+              100% {
+                transform: translateY(-26px);
+                opacity: 0;
+              }
+            }
+            @keyframes rise {
+              0% {
+                transform: translateY(16px) scale(0.7);
+                opacity: 0;
+              }
+              10% {
+                opacity: 0.85;
+              }
+              100% {
+                transform: translateY(-92px) scale(1);
+                opacity: 0;
+              }
+            }
+          </style>
+
+          <!-- Beaker outline -->
+          <g class="beaker">
+            <path d="M70 20 H210" />
+            <path d="M70 20 V210 Q70 225 85 225 H195 Q210 225 210 210 V20" />
+          </g>
+
+          <!-- Water area (inside beaker) -->
+          <g class="water" clip-path="url(#beakerClip)">
+            <rect x="70" y="85" width="140" height="140" rx="10" />
+            <!-- gentle waves -->
+            <g class="waves">
+              <path d="M80 165 q20 -6 40 0 t40 0 t40 0" />
+              <path d="M80 175 q20 -6 40 0 t40 0 t40 0" opacity=".7" />
+            </g>
+          </g>
+
+          <!-- Ice (visible near ≤ 0°C) -->
+          <g class="ice">
+            <rect x="95" y="70" width="28" height="28" rx="6" opacity=".9" />
+            <rect x="130" y="62" width="28" height="28" rx="6" opacity=".85" />
+            <rect x="165" y="74" width="28" height="28" rx="6" opacity=".9" />
+          </g>
+
+          <!-- Frost crystals near rim (very cold) -->
+          <g class="frost">
+            <polygon
+              points="88,28 92,36 100,36 94,42 96,50 88,46 80,50 82,42 76,36 84,36"
+            />
+            <polygon
+              points="196,28 200,36 208,36 202,42 204,50 196,46 188,50 190,42 184,36 192,36"
+            />
+          </g>
+
+          <!-- Soft steam puffs (≥ 100°C) -->
+          <g class="steam-soft">
+            <circle cx="140" cy="40" r="12" style="animation-delay: 0s" />
+            <circle cx="160" cy="42" r="10" style="animation-delay: 0.8s" />
+            <circle cx="120" cy="38" r="9" style="animation-delay: 1.4s" />
+            <circle cx="150" cy="30" r="8" style="animation-delay: 2.2s" />
+          </g>
+
+          <!-- Rising bubbles (most visible around warm water) -->
+          <g class="bubbles" clip-path="url(#beakerClip)">
+            <circle
+              cx="120"
+              cy="210"
+              r="4"
+              style="animation-duration: 6.2s; animation-delay: 0.3s"
+            />
+            <circle
+              cx="130"
+              cy="205"
+              r="3"
+              style="animation-duration: 5.4s; animation-delay: 1.1s"
+            />
+            <circle
+              cx="145"
+              cy="215"
+              r="3.5"
+              style="animation-duration: 6.8s; animation-delay: 0.9s"
+            />
+            <circle
+              cx="160"
+              cy="208"
+              r="2.8"
+              style="animation-duration: 5.8s; animation-delay: 1.7s"
+            />
+            <circle
+              cx="175"
+              cy="212"
+              r="3.2"
+              style="animation-duration: 6.5s; animation-delay: 0.6s"
+            />
+            <circle
+              cx="100"
+              cy="212"
+              r="2.6"
+              style="animation-duration: 6s; animation-delay: 1.9s"
+            />
+            <circle
+              cx="185"
+              cy="206"
+              r="3.0"
+              style="animation-duration: 5.6s; animation-delay: 2.4s"
+            />
+          </g>
+        </svg>
+      </section>
+      <!-- Optional tiny state marker for scripts -->
+      <div id="scene" data-state="water" hidden></div>
+      <p class="legend">
+        Температур нэмэгдэхэд усны төлөв дараах байдлаар өөрчлөгдөнө: ≤ 0°C →
+        <strong>Мөс</strong>, 0°C–99°C → <strong>Ус</strong>, ≥ 100°C →
+        <strong>Уур</strong>.
+      </p>
+    </main>
+
+    <script>
+      (function () {
+        const slider = document.getElementById("temp");
+        const tempValue = document.getElementById("tempValue");
+        const stateLabel = document.getElementById("stateLabel");
+        const sceneState = document.getElementById("scene");
+        const resetBtn = document.getElementById("resetBtn");
+
+        const stateText = { ice: "Мөс", water: "Ус", steam: "Уур" };
+        const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
+
+        let temp = 20;
+        let state = "water";
+
+        function updateSVGVisuals() {
+          const waterLevel = clamp(0.3 + ((temp + 50) / 200) * 0.5, 0.2, 0.9);
+          const iceAlpha = clamp((0 - temp) / 50, 0, 1);
+          const steamAlpha = clamp((temp - 100) / 50, 0, 1);
+          // Bubbles strongest in warm water ~50-80C, fade at extremes
+          const warmFactor = clamp((temp - 10) / 60, 0, 1);
+          const coolDownFactor = clamp((100 - temp) / 40, 0, 1);
+          const bubbleAlpha = clamp(warmFactor * coolDownFactor * 1.25, 0, 1);
+          const frostAlpha = clamp(iceAlpha * 0.9, 0, 1);
+
+          const root = document.documentElement.style;
+          root.setProperty("--water-level", String(waterLevel));
+          root.setProperty("--ice-alpha", String(iceAlpha));
+          root.setProperty("--steam-alpha", String(steamAlpha));
+          root.setProperty("--bubble-alpha", String(bubbleAlpha));
+          root.setProperty("--frost-alpha", String(frostAlpha));
+          root.setProperty("--temp", String(temp));
+        }
+
+        function updateLabels() {
+          tempValue.textContent = temp + " °C";
+          stateLabel.textContent = stateText[state];
+          sceneState.dataset.state = state;
+        }
+
+        function updateAll() {
+          state = temp <= 0 ? "ice" : temp >= 100 ? "steam" : "water";
+          updateSVGVisuals();
+          updateLabels();
+        }
+
+        slider.addEventListener("input", () => {
+          temp = parseInt(slider.value, 10);
+          updateAll();
+        });
+        resetBtn.addEventListener("click", () => {
+          temp = 20;
+          slider.value = "20";
+          updateAll();
+        });
+
+        updateAll();
+      })();
+    </script>
+    <noscript>
+      <div class="note" role="note">
+        JavaScript унтраалттай байна. Доорх SVG нь статик дүрслэлээр харагдана:
+        ≤ 0°C → Мөс, 0–99°C → Ус, ≥ 100°C → Уур.
+      </div>
+    </noscript>
+  </body>
+</html>

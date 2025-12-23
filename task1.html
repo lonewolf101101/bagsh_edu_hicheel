@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="mn">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Нар–Дэлхий–Сар | Улирал</title>
+    <style>
+      body {
+        margin: 0;
+        overflow: hidden;
+        background: black;
+      }
+      #ui {
+        position: absolute;
+        top: 10px;
+        left: 10px;
+        color: white;
+        font-family: Arial;
+        background: rgba(0, 0, 0, 0.65);
+        padding: 10px;
+        border-radius: 8px;
+        width: 220px;
+      }
+      button {
+        width: 100%;
+        margin-top: 6px;
+        cursor: pointer;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="ui">
+      🌍 Earth speed
+      <input
+        type="range"
+        id="earthSpeed"
+        min="0"
+        max="0.02"
+        step="0.001"
+        value="0.01"
+      /><br />
+
+      🌙 Moon speed
+      <input
+        type="range"
+        id="moonSpeed"
+        min="0"
+        max="0.05"
+        step="0.002"
+        value="0.03"
+      /><br />
+
+      <button id="toggleBtn">⏸️ Pause</button>
+      <hr />
+      <div id="season">🌱 Spring</div>
+      <small>🖱️ Drag mouse to rotate</small>
+    </div>
+
+    <!-- FILE-SAFE THREE.JS -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.149.0/build/three.min.js"></script>
+
+    <script>
+      /* ===== Scene ===== */
+      const scene = new THREE.Scene();
+
+      /* ===== Camera ===== */
+      const camera = new THREE.PerspectiveCamera(
+        60,
+        window.innerWidth / window.innerHeight,
+        0.1,
+        1000
+      );
+      camera.position.set(0, 80, 150);
+
+      /* ===== Renderer ===== */
+      const renderer = new THREE.WebGLRenderer({ antialias: true });
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      document.body.appendChild(renderer.domElement);
+
+      /* ===== Lights ===== */
+      scene.add(new THREE.AmbientLight(0x404040));
+      const sunLight = new THREE.PointLight(0xffffff, 2, 500);
+      scene.add(sunLight);
+
+      /* ===== Sun ===== */
+      const sun = new THREE.Mesh(
+        new THREE.SphereGeometry(15, 32, 32),
+        new THREE.MeshBasicMaterial({ color: 0xffff00 })
+      );
+      scene.add(sun);
+
+      /* ===== Earth Orbit ===== */
+      const earthOrbit = new THREE.Object3D();
+      scene.add(earthOrbit);
+
+      /* ===== Earth Tilt (23.5°) ===== */
+      const earthTilt = new THREE.Object3D();
+      earthTilt.rotation.z = THREE.MathUtils.degToRad(23.5);
+      earthOrbit.add(earthTilt);
+
+      /* ===== Earth ===== */
+      const earth = new THREE.Mesh(
+        new THREE.SphereGeometry(6, 32, 32),
+        new THREE.MeshStandardMaterial({ color: 0x0077ff })
+      );
+      earth.position.x = 50;
+      earthTilt.add(earth);
+
+      /* ===== Moon Orbit ===== */
+      const moonOrbit = new THREE.Object3D();
+      earth.add(moonOrbit);
+
+      /* ===== Moon ===== */
+      const moon = new THREE.Mesh(
+        new THREE.SphereGeometry(2, 32, 32),
+        new THREE.MeshStandardMaterial({ color: 0xcccccc })
+      );
+      moon.position.x = 12;
+      moonOrbit.add(moon);
+
+      /* ===== Mouse Drag Camera ===== */
+      let dragging = false,
+        px = 0,
+        py = 0,
+        ry = 0,
+        rx = 0;
+
+      document.addEventListener("mousedown", (e) => {
+        dragging = true;
+        px = e.clientX;
+        py = e.clientY;
+      });
+      document.addEventListener("mouseup", () => (dragging = false));
+      document.addEventListener("mousemove", (e) => {
+        if (!dragging) return;
+        ry += (e.clientX - px) * 0.005;
+        rx += (e.clientY - py) * 0.005;
+        px = e.clientX;
+        py = e.clientY;
+      });
+
+      /* ===== State ===== */
+      let earthAngle = 0;
+      let moonAngle = 0;
+      let running = true;
+
+      /* ===== Pause Button ===== */
+      toggleBtn.onclick = () => {
+        running = !running;
+        toggleBtn.innerText = running ? "⏸️ Pause" : "▶️ Play";
+      };
+
+      /* ===== Season Logic ===== */
+      function updateSeason(angle) {
+        const deg = ((THREE.MathUtils.radToDeg(angle) % 360) + 360) % 360;
+
+        let text = "🌱 Spring";
+        if (deg >= 90 && deg < 180) text = "🌞 Summer";
+        else if (deg >= 180 && deg < 270) text = "🍂 Autumn";
+        else if (deg >= 270) text = "❄️ Winter";
+
+        season.innerText = text;
+      }
+
+      /* ===== Animation ===== */
+      function animate() {
+        requestAnimationFrame(animate);
+
+        if (running) {
+          earthAngle += parseFloat(earthSpeed.value);
+          moonAngle += parseFloat(moonSpeed.value);
+        }
+
+        earthOrbit.rotation.y = earthAngle;
+        moonOrbit.rotation.y = moonAngle;
+
+        updateSeason(earthAngle);
+
+        camera.position.x = 150 * Math.sin(ry);
+        camera.position.z = 150 * Math.cos(ry);
+        camera.position.y = 80 + rx * 20;
+        camera.lookAt(0, 0, 0);
+
+        renderer.render(scene, camera);
+      }
+
+      animate();
+
+      /* ===== Resize ===== */
+      window.addEventListener("resize", () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+      });
+    </script>
+  </body>
+</html>

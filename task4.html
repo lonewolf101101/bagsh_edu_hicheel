@@ -1,0 +1,727 @@
+<!DOCTYPE html>
+<html lang="mn">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Даалгавар 4 — Энгийн цахилгаан хэлхээ симулятор</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --bg: #0b1220;
+        --card: #0f1b33;
+        --text: #eaf1ff;
+        --muted: #9db0d0;
+        --border: rgba(255, 255, 255, 0.12);
+        --accent: #7aa7ff;
+        --good: #55d68a;
+        --warn: #ffd36a;
+        --bad: #ff6b6b;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto,
+          Helvetica, Arial;
+        background: radial-gradient(1200px 700px at 18% 0%, #162b55, var(--bg));
+        color: var(--text);
+      }
+
+      .container {
+        max-width: 980px;
+        margin: 0 auto;
+        padding: 22px 16px 40px;
+      }
+
+      .header {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 16px;
+        flex-wrap: wrap;
+        margin-bottom: 14px;
+      }
+
+      h1 {
+        margin: 0;
+        font-size: clamp(22px, 2.2vw, 30px);
+        letter-spacing: 0.2px;
+      }
+
+      .course {
+        color: var(--muted);
+        font-size: 14px;
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: 1.15fr 0.85fr;
+        gap: 14px;
+      }
+      @media (max-width: 900px) {
+        .grid {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      .card {
+        background: color-mix(in oklab, var(--card), black 10%);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        padding: 14px;
+      }
+
+      .row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+
+      .btn {
+        appearance: none;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 10px 12px;
+        font-weight: 750;
+        cursor: pointer;
+        background: color-mix(in oklab, var(--card), var(--accent) 10%);
+        color: var(--text);
+        transition: transform 120ms ease, filter 120ms ease;
+      }
+
+      .btn.secondary {
+        background: rgba(255, 255, 255, 0.04);
+      }
+
+      .btn:active {
+        transform: translateY(1px);
+      }
+
+      .btn:focus-visible {
+        outline: 3px solid color-mix(in oklab, var(--accent), white 20%);
+        outline-offset: 2px;
+      }
+
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 10px;
+        border-radius: 999px;
+        border: 1px solid var(--border);
+        background: rgba(255, 255, 255, 0.04);
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      .badge strong {
+        color: var(--text);
+      }
+
+      .status {
+        margin-top: 12px;
+        padding: 10px;
+        border-radius: 12px;
+        border: 1px solid var(--border);
+        background: rgba(255, 255, 255, 0.04);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+
+      .status .left {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+      }
+
+      .dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 999px;
+        background: var(--bad);
+        box-shadow: 0 0 0 3px rgba(255, 107, 107, 0.18);
+      }
+
+      .status.on .dot {
+        background: var(--good);
+        box-shadow: 0 0 0 3px rgba(85, 214, 138, 0.18);
+      }
+
+      .status .msg {
+        font-weight: 700;
+      }
+
+      .status .sub {
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      .hint {
+        color: var(--muted);
+        font-size: 13px;
+        line-height: 1.5;
+        margin: 10px 0 0;
+      }
+
+      .prompt {
+        margin-top: 12px;
+        border: 1px dashed var(--border);
+        border-radius: 12px;
+        background: rgba(255, 255, 255, 0.03);
+        padding: 10px;
+        color: color-mix(in oklab, var(--muted), var(--text) 18%);
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+          "Liberation Mono", "Courier New", monospace;
+        font-size: 13px;
+        white-space: pre-wrap;
+      }
+
+      canvas {
+        width: 100%;
+        height: auto;
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        background: radial-gradient(900px 500px at 30% 15%, #14264b, #0b1220);
+        display: block;
+      }
+
+      .note {
+        margin-top: 12px;
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      .sr-only {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="container" aria-labelledby="title">
+      <header class="header">
+        <h1 id="title">Энгийн цахилгаан хэлхээ симулятор</h1>
+        <span class="course">Хичээл: Физик</span>
+      </header>
+
+      <div class="grid">
+        <section class="card" aria-label="Удирдлага">
+          <div class="row">
+            <button class="btn" id="toggleBtn" type="button">
+              Товч (унтраалттай)
+            </button>
+            <button class="btn secondary" id="resetBtn" type="button">
+              Дахин эхлүүлэх
+            </button>
+            <span class="badge"
+              >Товч: <strong>Space</strong> — асаах/унтраах</span
+            >
+          </div>
+
+          <div class="status" id="statusBox" aria-live="polite">
+            <div class="left">
+              <div class="dot" aria-hidden="true"></div>
+              <div>
+                <div class="msg" id="statusMsg">
+                  Хэлхээ нээлттэй — чийдэн унтарсан
+                </div>
+                <div class="sub" id="statusSub">
+                  Товчийг дарж хэлхээг хаавал гүйдэл урсана.
+                </div>
+              </div>
+            </div>
+            <span class="badge"
+              >Чийдэн: <strong id="bulbState">OFF</strong></span
+            >
+          </div>
+
+          <p class="hint">
+            Сэдэв: <strong>Гэрлийн чийдэн асаах / унтрах</strong>. Энгийн
+            хэлхээнд хэлхээ <em>хаалттай</em> үед гүйдэл урсаж, чийдэн асна.
+            Хэлхээ <em>нээлттэй</em> үед гүйдэл урсахгүй.
+          </p>
+
+          <div class="prompt" aria-label="Сурагчдад өгөх жишээ prompt">
+            Сурагчид AI-д ингэж prompt бичиж болно: "Батарей → Утас → Чийдэн
+            бүхий энгийн хэлхээ, товч дарахад гэрэл асах HTML Canvas код гарга"
+          </div>
+
+          <p class="note">
+            Дүрс дээрх <strong>унтраалга (switch)</strong>-ыг мөн шууд дарж
+            болно.
+          </p>
+        </section>
+
+        <section class="card" aria-label="Canvas симуляц">
+          <canvas id="c" width="860" height="520"></canvas>
+          <div class="sr-only" id="live" aria-live="polite"></div>
+          <noscript>
+            <div class="note" role="note">
+              JavaScript унтраалттай тул симулятор ажиллахгүй. Гэхдээ санаа нь:
+              хэлхээ хаалттай үед гүйдэл урсаж чийдэн асна.
+            </div>
+          </noscript>
+        </section>
+      </div>
+    </main>
+
+    <script>
+      (function () {
+        const canvas = document.getElementById("c");
+        const ctx = canvas.getContext("2d");
+
+        const toggleBtn = document.getElementById("toggleBtn");
+        const resetBtn = document.getElementById("resetBtn");
+        const statusBox = document.getElementById("statusBox");
+        const statusMsg = document.getElementById("statusMsg");
+        const statusSub = document.getElementById("statusSub");
+        const bulbState = document.getElementById("bulbState");
+        const live = document.getElementById("live");
+
+        const DPR = Math.min(window.devicePixelRatio || 1, 2);
+
+        // Circuit state
+        const sim = {
+          closed: false,
+          t: 0,
+          currentPhase: 0,
+          // for click hit-test
+          switchRect: { x: 0, y: 0, w: 0, h: 0 },
+        };
+
+        function resizeCanvasToCSS() {
+          const rect = canvas.getBoundingClientRect();
+          const w = Math.max(520, Math.floor(rect.width));
+          const h = Math.round((w * 520) / 860);
+          canvas.width = Math.floor(w * DPR);
+          canvas.height = Math.floor(h * DPR);
+          canvas.style.height = h + "px";
+          ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+        }
+
+        function roundRect(x, y, w, h, r) {
+          const rr = Math.min(r, w / 2, h / 2);
+          ctx.beginPath();
+          ctx.moveTo(x + rr, y);
+          ctx.arcTo(x + w, y, x + w, y + h, rr);
+          ctx.arcTo(x + w, y + h, x, y + h, rr);
+          ctx.arcTo(x, y + h, x, y, rr);
+          ctx.arcTo(x, y, x + w, y, rr);
+          ctx.closePath();
+        }
+
+        function drawWirePath(points) {
+          ctx.beginPath();
+          ctx.moveTo(points[0].x, points[0].y);
+          for (let i = 1; i < points.length; i++) {
+            ctx.lineTo(points[i].x, points[i].y);
+          }
+        }
+
+        function drawCurrentDots(points, speed, color, alpha) {
+          // Draw small dots moving along the polyline.
+          const dotCount = 28;
+          const dotSpacing = 1 / dotCount;
+
+          // Precompute segment lengths
+          const segs = [];
+          let total = 0;
+          for (let i = 0; i < points.length - 1; i++) {
+            const a = points[i];
+            const b = points[i + 1];
+            const len = Math.hypot(b.x - a.x, b.y - a.y);
+            segs.push({ a, b, len });
+            total += len;
+          }
+
+          if (total <= 0.001) return;
+
+          ctx.save();
+          ctx.fillStyle = color;
+          ctx.globalAlpha = alpha;
+
+          for (let i = 0; i < dotCount; i++) {
+            const p = (i * dotSpacing + sim.currentPhase) % 1;
+            const dist = p * total;
+            let acc = 0;
+            for (const s of segs) {
+              if (acc + s.len >= dist) {
+                const u = (dist - acc) / s.len;
+                const x = s.a.x + (s.b.x - s.a.x) * u;
+                const y = s.a.y + (s.b.y - s.a.y) * u;
+                const r =
+                  2.2 +
+                  1.2 * Math.sin((i / dotCount) * Math.PI * 2 + sim.t * 0.06);
+                ctx.beginPath();
+                ctx.arc(x, y, r, 0, Math.PI * 2);
+                ctx.fill();
+                break;
+              }
+              acc += s.len;
+            }
+          }
+          ctx.restore();
+
+          sim.currentPhase = (sim.currentPhase + speed) % 1;
+        }
+
+        function draw() {
+          const w = canvas.width / DPR;
+          const h = canvas.height / DPR;
+          ctx.clearRect(0, 0, w, h);
+
+          // Layout
+          const pad = 44;
+          const left = pad;
+          const right = w - pad;
+          const top = pad;
+          const bottom = h - pad;
+
+          // Battery location
+          const batX = left + 40;
+          const batY = h / 2;
+
+          // Bulb location (right side, series component)
+          const bulbX = right - 170;
+
+          // Switch location (top middle)
+          const swX = w / 2 - 60;
+          const swY = top + 30;
+          const swW = 120;
+          const swH = 44;
+          sim.switchRect = { x: swX, y: swY, w: swW, h: swH };
+
+          // Shared y-levels
+          const topWireY = swY + swH / 2;
+          const bottomWireY = Math.min(bottom - 70, batY + 170);
+
+          // Switch contacts
+          const cx1 = swX + 18;
+          const cx2 = swX + swW - 18;
+          const cy = topWireY;
+
+          // Bus x positions for tidy 90-degree wiring
+          const leftBusX = left + 190;
+          const rightBusX = right - 190;
+
+          // Battery terminal points (external)
+          const batPos = { x: batX + 28, y: batY - 50 };
+          const batNeg = { x: batX + 28, y: batY + 70 };
+
+          // Bulb geometry (series on right vertical path)
+          const bulbR = 34;
+          const bulbCenterY = (topWireY + bottomWireY) / 2 + 6;
+          const bulbLeadTop = { x: bulbX, y: bulbCenterY - bulbR - 18 };
+          const bulbLeadBottom = { x: bulbX, y: bulbCenterY + bulbR + 18 };
+
+          // Wire segments (open switch = visible break)
+          const wireA = [
+            batPos,
+            { x: leftBusX, y: batPos.y },
+            { x: leftBusX, y: topWireY },
+            { x: cx1, y: topWireY },
+          ];
+          const wireB = [
+            { x: cx2, y: topWireY },
+            { x: rightBusX, y: topWireY },
+            { x: rightBusX, y: bulbLeadTop.y },
+            bulbLeadTop,
+          ];
+          const wireC = [
+            bulbLeadBottom,
+            { x: rightBusX, y: bulbLeadBottom.y },
+            { x: rightBusX, y: bottomWireY },
+            { x: leftBusX, y: bottomWireY },
+            { x: leftBusX, y: batNeg.y },
+            batNeg,
+          ];
+
+          // For current animation we use a single closed path (including across switch & through bulb)
+          const currentPath = sim.closed
+            ? [
+                ...wireA,
+                { x: cx2, y: topWireY },
+                ...wireB.slice(1),
+                { x: bulbX, y: bulbCenterY },
+                bulbLeadBottom,
+                ...wireC.slice(1),
+                batPos,
+              ]
+            : null;
+
+          // --- Draw labels / subtle grid ---
+          ctx.save();
+          ctx.globalAlpha = 0.12;
+          ctx.strokeStyle = "#cfe0ff";
+          for (let gx = 0; gx < w; gx += 40) {
+            ctx.beginPath();
+            ctx.moveTo(gx, 0);
+            ctx.lineTo(gx, h);
+            ctx.stroke();
+          }
+          for (let gy = 0; gy < h; gy += 40) {
+            ctx.beginPath();
+            ctx.moveTo(0, gy);
+            ctx.lineTo(w, gy);
+            ctx.stroke();
+          }
+          ctx.restore();
+
+          // --- Wires ---
+          ctx.save();
+          ctx.lineWidth = 10;
+          ctx.lineCap = "round";
+          ctx.lineJoin = "round";
+
+          function strokeWire(points) {
+            // shadow
+            drawWirePath(points);
+            ctx.strokeStyle = "rgba(0,0,0,.35)";
+            ctx.lineWidth = 14;
+            ctx.stroke();
+            // main
+            drawWirePath(points);
+            ctx.strokeStyle = "rgba(205, 220, 255, .75)";
+            ctx.lineWidth = 10;
+            ctx.stroke();
+          }
+
+          strokeWire(wireA);
+          strokeWire(wireB);
+          strokeWire(wireC);
+
+          // Current dots when closed
+          if (sim.closed && currentPath) {
+            drawCurrentDots(
+              currentPath,
+              0.0065,
+              "rgba(255, 211, 106, 1)",
+              0.95
+            );
+          }
+          ctx.restore();
+
+          // --- Switch ---
+          ctx.save();
+          // switch base
+          roundRect(swX, swY, swW, swH, 12);
+          ctx.fillStyle = "rgba(255,255,255,.05)";
+          ctx.fill();
+          ctx.strokeStyle = "rgba(255,255,255,.18)";
+          ctx.lineWidth = 2;
+          ctx.stroke();
+
+          // contacts
+          ctx.fillStyle = sim.closed
+            ? "rgba(85,214,138,.95)"
+            : "rgba(255,107,107,.95)";
+          ctx.beginPath();
+          ctx.arc(cx1, cy, 6, 0, Math.PI * 2);
+          ctx.arc(cx2, cy, 6, 0, Math.PI * 2);
+          ctx.fill();
+
+          // lever
+          ctx.strokeStyle = "rgba(235, 245, 255, .92)";
+          ctx.lineWidth = 6;
+          ctx.lineCap = "round";
+          ctx.beginPath();
+          ctx.moveTo(cx1, cy);
+          if (sim.closed) {
+            ctx.lineTo(cx2, cy);
+          } else {
+            ctx.lineTo(cx2 - 18, cy - 16);
+          }
+          ctx.stroke();
+
+          // switch label
+          ctx.fillStyle = "rgba(234,241,255,.9)";
+          ctx.font = "700 13px ui-sans-serif, system-ui";
+          ctx.fillText("Унтраалга", swX + 24, swY - 10);
+          ctx.restore();
+
+          // --- Battery ---
+          ctx.save();
+          ctx.fillStyle = "rgba(234,241,255,.92)";
+          ctx.font = "700 13px ui-sans-serif, system-ui";
+          ctx.fillText("Батарей", batX - 10, batY - 92);
+
+          // battery body
+          roundRect(batX - 28, batY - 70, 56, 140, 16);
+          ctx.fillStyle = "rgba(255,255,255,.06)";
+          ctx.fill();
+          ctx.strokeStyle = "rgba(255,255,255,.18)";
+          ctx.lineWidth = 2;
+          ctx.stroke();
+
+          // terminals +/−
+          ctx.fillStyle = "rgba(255,255,255,.85)";
+          ctx.font = "800 18px ui-sans-serif, system-ui";
+          ctx.fillText("+", batX - 6, batY - 40);
+          ctx.fillText("−", batX - 6, batY + 52);
+
+          ctx.restore();
+
+          // --- Bulb ---
+          ctx.save();
+          ctx.fillStyle = "rgba(234,241,255,.92)";
+          ctx.font = "700 13px ui-sans-serif, system-ui";
+          ctx.fillText("Чийдэн", bulbX - 18, bulbCenterY - 92);
+
+          // glow when on
+          if (sim.closed) {
+            const glow = ctx.createRadialGradient(
+              bulbX,
+              bulbCenterY,
+              8,
+              bulbX,
+              bulbCenterY,
+              92
+            );
+            glow.addColorStop(0, "rgba(255,211,106,.85)");
+            glow.addColorStop(0.45, "rgba(255,211,106,.22)");
+            glow.addColorStop(1, "rgba(255,211,106,0)");
+            ctx.fillStyle = glow;
+            ctx.beginPath();
+            ctx.arc(bulbX, bulbCenterY, 92, 0, Math.PI * 2);
+            ctx.fill();
+          }
+
+          // bulb leads
+          ctx.strokeStyle = "rgba(205,220,255,.75)";
+          ctx.lineWidth = 8;
+          ctx.lineCap = "round";
+          ctx.beginPath();
+          ctx.moveTo(bulbLeadTop.x, bulbLeadTop.y);
+          ctx.lineTo(bulbX, bulbCenterY - bulbR);
+          ctx.moveTo(bulbX, bulbCenterY + bulbR);
+          ctx.lineTo(bulbLeadBottom.x, bulbLeadBottom.y);
+          ctx.stroke();
+
+          // bulb glass
+          ctx.beginPath();
+          ctx.arc(bulbX, bulbCenterY, bulbR, 0, Math.PI * 2);
+          ctx.fillStyle = "rgba(255,255,255,.06)";
+          ctx.fill();
+          ctx.strokeStyle = "rgba(255,255,255,.18)";
+          ctx.lineWidth = 2;
+          ctx.stroke();
+
+          // filament
+          ctx.strokeStyle = sim.closed
+            ? "rgba(255,211,106,.95)"
+            : "rgba(200,210,235,.55)";
+          ctx.lineWidth = 4;
+          ctx.beginPath();
+          ctx.moveTo(bulbX - 14, bulbCenterY);
+          ctx.quadraticCurveTo(
+            bulbX,
+            bulbCenterY - 14,
+            bulbX + 14,
+            bulbCenterY
+          );
+          ctx.stroke();
+
+          // bulb base (small cap)
+          roundRect(bulbX - 20, bulbCenterY + bulbR + 10, 40, 18, 8);
+          ctx.fillStyle = "rgba(255,255,255,.07)";
+          ctx.fill();
+          ctx.strokeStyle = "rgba(255,255,255,.18)";
+          ctx.lineWidth = 2;
+          ctx.stroke();
+          ctx.restore();
+
+          // --- Helper hint ---
+          ctx.save();
+          ctx.fillStyle = "rgba(234,241,255,.8)";
+          ctx.font = "600 12px ui-sans-serif, system-ui";
+          ctx.fillText("Унтраалгыг дарж ON/OFF", swX + 6, swY + swH + 22);
+
+          // Polarity hint near battery
+          ctx.fillStyle = "rgba(234,241,255,.65)";
+          ctx.font = "600 12px ui-sans-serif, system-ui";
+          ctx.fillText("+ →", batPos.x + 8, batPos.y + 4);
+          ctx.fillText("← −", batNeg.x + 8, batNeg.y + 4);
+          ctx.restore();
+        }
+
+        function updateUI() {
+          toggleBtn.textContent = sim.closed
+            ? "Товч (асаалттай)"
+            : "Товч (унтраалттай)";
+          bulbState.textContent = sim.closed ? "ON" : "OFF";
+          statusBox.classList.toggle("on", sim.closed);
+          statusMsg.textContent = sim.closed
+            ? "Хэлхээ хаалттай — чийдэн ассан"
+            : "Хэлхээ нээлттэй — чийдэн унтарсан";
+          statusSub.textContent = sim.closed
+            ? "Гүйдэл урсаж байна (шар цэгүүд хөдөлнө)."
+            : "Товчийг дарж хэлхээг хаавал гүйдэл урсана.";
+          live.textContent = sim.closed ? "Чийдэн аслаа." : "Чийдэн унтарлаа.";
+        }
+
+        function toggle() {
+          sim.closed = !sim.closed;
+          updateUI();
+        }
+
+        function reset() {
+          sim.closed = false;
+          sim.t = 0;
+          sim.currentPhase = 0;
+          updateUI();
+        }
+
+        function hitTestSwitch(clientX, clientY) {
+          const rect = canvas.getBoundingClientRect();
+          const x = clientX - rect.left;
+          const y = clientY - rect.top;
+          const s = sim.switchRect;
+          return x >= s.x && x <= s.x + s.w && y >= s.y && y <= s.y + s.h;
+        }
+
+        function frame() {
+          sim.t += 1;
+          draw();
+          requestAnimationFrame(frame);
+        }
+
+        toggleBtn.addEventListener("click", toggle);
+        resetBtn.addEventListener("click", reset);
+
+        canvas.addEventListener("click", (e) => {
+          if (hitTestSwitch(e.clientX, e.clientY)) toggle();
+        });
+
+        window.addEventListener("keydown", (e) => {
+          if (e.repeat) return;
+          if (e.key === " ") {
+            e.preventDefault();
+            toggle();
+          }
+        });
+
+        window.addEventListener("resize", () => {
+          resizeCanvasToCSS();
+        });
+
+        resizeCanvasToCSS();
+        updateUI();
+        frame();
+      })();
+    </script>
+  </body>
+</html>

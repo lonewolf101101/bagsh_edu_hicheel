@@ -1,0 +1,1043 @@
+<!DOCTYPE html>
+<html lang="mn">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Даалгавар 3 — Ургамлын фотосинтезийн мини тоглоом</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --bg: #0b1220;
+        --card: #0f1b33;
+        --muted: #9db0d0;
+        --text: #eaf1ff;
+        --border: rgba(255, 255, 255, 0.12);
+        --good: #55d68a;
+        --warn: #ffd36a;
+        --bad: #ff6b6b;
+        --accent: #7aa7ff;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto,
+          Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+        background: radial-gradient(1200px 700px at 20% 0%, #162b55, var(--bg));
+        color: var(--text);
+      }
+
+      .container {
+        max-width: 980px;
+        margin: 0 auto;
+        padding: 22px 16px 40px;
+      }
+
+      .header {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 16px;
+        flex-wrap: wrap;
+        margin-bottom: 14px;
+      }
+
+      h1 {
+        font-size: clamp(22px, 2.2vw, 30px);
+        margin: 0;
+        letter-spacing: 0.2px;
+      }
+
+      .course {
+        color: var(--muted);
+        font-size: 14px;
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: 1.2fr 0.8fr;
+        gap: 14px;
+      }
+
+      @media (max-width: 860px) {
+        .grid {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      .card {
+        background: color-mix(in oklab, var(--card), black 10%);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        padding: 14px;
+      }
+
+      .row {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        flex-wrap: wrap;
+      }
+
+      .kpi {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 10px;
+        margin-top: 12px;
+      }
+
+      .tile {
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 10px 10px;
+        min-height: 76px;
+      }
+
+      .tile h3 {
+        margin: 0;
+        font-size: 13px;
+        color: var(--muted);
+        font-weight: 650;
+      }
+
+      .tile .value {
+        margin-top: 6px;
+        font-size: 22px;
+        font-weight: 760;
+        letter-spacing: 0.2px;
+      }
+
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 10px;
+        border-radius: 999px;
+        border: 1px solid var(--border);
+        background: rgba(255, 255, 255, 0.04);
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      .badge strong {
+        color: var(--text);
+      }
+
+      .btn {
+        appearance: none;
+        border: 1px solid var(--border);
+        background: color-mix(in oklab, var(--card), var(--accent) 10%);
+        color: var(--text);
+        border-radius: 12px;
+        padding: 10px 12px;
+        font-weight: 700;
+        cursor: pointer;
+        transition: transform 120ms ease, filter 120ms ease;
+      }
+
+      .btn:active {
+        transform: translateY(1px);
+      }
+
+      .btn.secondary {
+        background: rgba(255, 255, 255, 0.04);
+        color: var(--text);
+      }
+
+      .btn:focus-visible {
+        outline: 3px solid color-mix(in oklab, var(--accent), white 20%);
+        outline-offset: 2px;
+      }
+
+      .hint {
+        color: var(--muted);
+        font-size: 13px;
+        line-height: 1.45;
+        margin: 10px 0 0;
+      }
+
+      .equation {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+          "Liberation Mono", "Courier New", monospace;
+        font-size: 13px;
+        color: color-mix(in oklab, var(--muted), var(--text) 20%);
+        padding: 10px 10px;
+        border-radius: 12px;
+        border: 1px dashed var(--border);
+        margin-top: 10px;
+        background: rgba(255, 255, 255, 0.03);
+      }
+
+      .progress {
+        margin-top: 10px;
+        display: grid;
+        gap: 8px;
+      }
+
+      .meter {
+        display: grid;
+        gap: 6px;
+      }
+
+      .meter .label {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        gap: 10px;
+        font-size: 13px;
+        color: var(--muted);
+      }
+
+      .bar {
+        height: 10px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.06);
+        border: 1px solid var(--border);
+        overflow: hidden;
+      }
+
+      .bar > div {
+        height: 100%;
+        width: 0%;
+        background: linear-gradient(90deg, var(--accent), #55d68a);
+        transition: width 140ms ease;
+      }
+
+      .status {
+        margin-top: 10px;
+        padding: 10px;
+        border-radius: 12px;
+        border: 1px solid var(--border);
+        background: rgba(255, 255, 255, 0.04);
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+      }
+
+      .status .left {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+      }
+
+      .dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 999px;
+        background: var(--warn);
+        box-shadow: 0 0 0 3px rgba(255, 211, 106, 0.18);
+      }
+
+      .status.good .dot {
+        background: var(--good);
+        box-shadow: 0 0 0 3px rgba(85, 214, 138, 0.18);
+      }
+      .status.bad .dot {
+        background: var(--bad);
+        box-shadow: 0 0 0 3px rgba(255, 107, 107, 0.18);
+      }
+
+      .status .msg {
+        color: var(--text);
+        font-weight: 650;
+      }
+
+      .status .sub {
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      .scene {
+        display: grid;
+        place-items: center;
+        min-height: 390px;
+      }
+
+      .scene svg {
+        width: min(420px, 100%);
+        height: auto;
+      }
+
+      /* Make the plant feel alive (animations). */
+      .scene svg {
+        user-select: none;
+      }
+
+      /* SVG transform helpers */
+      #sun,
+      #sunWrap,
+      #sunRays,
+      #plant,
+      #stem,
+      #leafL,
+      #leafR,
+      #face,
+      #molecules,
+      #stars,
+      #burst {
+        transform-box: fill-box;
+        transform-origin: center;
+      }
+
+      /* Animate inner sun group so translate() stays stable */
+      #sun {
+        animation: sunFloat 4.5s ease-in-out infinite;
+      }
+
+      #sunRays {
+        transform-origin: center;
+        animation: sunSpin 10s linear infinite;
+      }
+
+      /* Sway the whole plant so the face stays attached */
+      #plant {
+        transform-box: view-box;
+        transform-origin: 210px 310px;
+        animation: stemSway 5.2s ease-in-out infinite;
+      }
+
+      #leafL {
+        transform-origin: 200px 250px;
+        animation: leafSway 3.6s ease-in-out infinite;
+      }
+
+      #leafR {
+        transform-origin: 240px 240px;
+        animation: leafSway 3.9s ease-in-out infinite reverse;
+      }
+
+      #face {
+        transform-origin: center;
+        animation: faceBob 2.8s ease-in-out infinite;
+      }
+
+      /* Decorative molecule drift */
+      #molecules {
+        animation: drift 6s ease-in-out infinite;
+      }
+
+      /* Twinkling stars */
+      #stars circle {
+        animation: twinkle 2.6s ease-in-out infinite;
+      }
+      #stars circle:nth-child(2) {
+        animation-delay: 0.6s;
+      }
+      #stars circle:nth-child(3) {
+        animation-delay: 1.1s;
+      }
+      #stars circle:nth-child(4) {
+        animation-delay: 1.6s;
+      }
+
+      /* Burst when collecting resources */
+      #burst {
+        opacity: 0;
+      }
+      #plantSvg.is-bursting #burst {
+        opacity: 1;
+      }
+      #plantSvg.is-bursting #burst .p {
+        animation: burstUp 650ms ease-out forwards;
+      }
+      #plantSvg.is-bursting #burst > g:nth-child(2) .p {
+        animation-delay: 60ms;
+      }
+      #plantSvg.is-bursting #burst > g:nth-child(3) .p {
+        animation-delay: 120ms;
+      }
+
+      /* Happy pulse */
+      #plantSvg.is-happy #face {
+        animation: faceHappy 950ms ease-in-out 1;
+      }
+
+      @keyframes sunFloat {
+        0% {
+          transform: translateY(0px) scale(1);
+        }
+        50% {
+          transform: translateY(-4px) scale(1.02);
+        }
+        100% {
+          transform: translateY(0px) scale(1);
+        }
+      }
+
+      @keyframes sunSpin {
+        from {
+          transform: rotate(0deg);
+        }
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
+      @keyframes stemSway {
+        0% {
+          transform: rotate(-0.6deg);
+        }
+        50% {
+          transform: rotate(0.8deg);
+        }
+        100% {
+          transform: rotate(-0.6deg);
+        }
+      }
+
+      @keyframes leafSway {
+        0% {
+          transform: rotate(-1.3deg) translateY(0px);
+        }
+        50% {
+          transform: rotate(1.1deg) translateY(-1px);
+        }
+        100% {
+          transform: rotate(-1.3deg) translateY(0px);
+        }
+      }
+
+      @keyframes faceBob {
+        0% {
+          transform: translateY(0px);
+        }
+        50% {
+          transform: translateY(-2px);
+        }
+        100% {
+          transform: translateY(0px);
+        }
+      }
+
+      @keyframes faceHappy {
+        0% {
+          transform: translateY(0px) scale(1);
+        }
+        30% {
+          transform: translateY(-4px) scale(1.03);
+        }
+        100% {
+          transform: translateY(0px) scale(1);
+        }
+      }
+
+      @keyframes drift {
+        0% {
+          transform: translateY(0px);
+          opacity: 0.52;
+        }
+        50% {
+          transform: translateY(-6px);
+          opacity: 0.62;
+        }
+        100% {
+          transform: translateY(0px);
+          opacity: 0.52;
+        }
+      }
+
+      @keyframes twinkle {
+        0% {
+          opacity: 0.2;
+        }
+        50% {
+          opacity: 0.8;
+        }
+        100% {
+          opacity: 0.2;
+        }
+      }
+
+      @keyframes burstUp {
+        0% {
+          transform: translateY(0px) scale(0.95);
+          opacity: 0;
+        }
+        20% {
+          opacity: 0.95;
+        }
+        100% {
+          transform: translateY(-52px) scale(1.05);
+          opacity: 0;
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        #sun,
+        #sunRays,
+        #stem,
+        #leafL,
+        #leafR,
+        #face,
+        #molecules,
+        #stars circle {
+          animation: none !important;
+        }
+        #plantSvg.is-bursting #burst .p {
+          animation: none !important;
+        }
+      }
+
+      .note {
+        color: var(--muted);
+        font-size: 13px;
+        margin-top: 12px;
+      }
+
+      .sr-only {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="container" aria-labelledby="title">
+      <header class="header">
+        <h1 id="title">Ургамлын фотосинтезийн мини тоглоом</h1>
+        <span class="course">Хичээл: Биологи</span>
+      </header>
+
+      <div class="grid">
+        <section class="card" aria-label="Тоглоомын тайлбар болон удирдлага">
+          <div class="row">
+            <span class="badge" aria-live="polite">
+              Товч:
+              <strong>N</strong>
+              — CO₂ + Ус + Гэрэл нэмнэ
+            </span>
+            <button class="btn" id="collectBtn" type="button">Нэмэх (N)</button>
+            <button class="btn secondary" id="resetBtn" type="button">
+              Эхлүүлэх
+            </button>
+          </div>
+
+          <p class="hint">
+            Зорилго: CO₂, ус (H₂O), нарны гэрлийг цуглуулж
+            <strong>глюкоз</strong>
+            үүсгэх. Хангалттай орц бүрдмэгц ургамал автоматаар фотосинтез хийж,
+            глюкоз нэмэгдэнэ.
+          </p>
+
+          <div class="equation" aria-label="Фотосинтезийн тэгшитгэл">
+            6 CO₂ + 6 H₂O + гэрэл → C₆H₁₂O₆ (глюкоз) + 6 O₂
+          </div>
+
+          <div class="kpi" role="group" aria-label="Нөөцийн тоолуур">
+            <div class="tile">
+              <h3>CO₂</h3>
+              <div class="value" id="co2Value">0</div>
+            </div>
+            <div class="tile">
+              <h3>Ус (H₂O)</h3>
+              <div class="value" id="waterValue">0</div>
+            </div>
+            <div class="tile">
+              <h3>Нарны гэрэл</h3>
+              <div class="value" id="lightValue">0</div>
+            </div>
+            <div class="tile">
+              <h3>Глюкоз</h3>
+              <div class="value" id="glucoseValue">0</div>
+            </div>
+            <div class="tile">
+              <h3>O₂</h3>
+              <div class="value" id="o2Value">0</div>
+            </div>
+            <div class="tile">
+              <h3>Товшилт</h3>
+              <div class="value" id="pressValue">0</div>
+            </div>
+          </div>
+
+          <div class="progress" aria-label="Дараагийн глюкоз хүртэлх явц">
+            <div class="meter">
+              <div class="label">
+                <span>CO₂ (0–6)</span>
+                <span id="co2Need">0/6</span>
+              </div>
+              <div class="bar"><div id="co2Bar"></div></div>
+            </div>
+            <div class="meter">
+              <div class="label">
+                <span>H₂O (0–6)</span>
+                <span id="waterNeed">0/6</span>
+              </div>
+              <div class="bar"><div id="waterBar"></div></div>
+            </div>
+            <div class="meter">
+              <div class="label">
+                <span>Гэрэл (0–6)</span>
+                <span id="lightNeed">0/6</span>
+              </div>
+              <div class="bar"><div id="lightBar"></div></div>
+            </div>
+          </div>
+
+          <div class="status" id="statusBox" aria-live="polite">
+            <div class="left">
+              <div class="dot" aria-hidden="true"></div>
+              <div>
+                <div class="msg" id="statusMsg">Нөөцөө цуглуулаарай</div>
+                <div class="sub" id="statusSub">
+                  Дараагийн глюкоз хийхийн тулд 6 CO₂, 6 H₂O, 6 гэрэл хэрэгтэй.
+                </div>
+              </div>
+            </div>
+            <span class="badge" id="moodBadge">
+              Ургамлын сэтгэл: <strong id="moodText">Энгийн</strong>
+            </span>
+          </div>
+
+          <p class="note">
+            Тайлбар: Энэ тоглоом нь хялбаршуулсан загвар. Нэг “үйлдвэрлэлт” бүр
+            6‑цаар нь орцыг зарцуулж 1 глюкоз, 6 O₂ гаргана.
+          </p>
+        </section>
+
+        <section class="card scene" aria-label="Ургамлын дүрслэл">
+          <svg
+            id="plantSvg"
+            viewBox="0 0 420 420"
+            role="img"
+            aria-label="Ургамал инээмсэглэх эсвэл гуниглах дүр"
+          >
+            <title>Ургамлын төлөв</title>
+            <defs>
+              <radialGradient id="sunGrad" cx="0.35" cy="0.35" r="0.8">
+                <stop offset="0%" stop-color="#fff7bf" />
+                <stop offset="70%" stop-color="#ffd36a" />
+                <stop offset="100%" stop-color="#ffb13b" />
+              </radialGradient>
+              <linearGradient id="leafGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#5ae08e" />
+                <stop offset="100%" stop-color="#1ea85a" />
+              </linearGradient>
+              <linearGradient id="stemGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#39c46f" />
+                <stop offset="100%" stop-color="#138b46" />
+              </linearGradient>
+              <filter id="soft" x="-20%" y="-20%" width="140%" height="140%">
+                <feGaussianBlur stdDeviation="0.6" />
+              </filter>
+            </defs>
+
+            <!-- sky dots -->
+            <g id="stars" opacity=".35">
+              <circle cx="40" cy="40" r="2" fill="#cfe0ff" />
+              <circle cx="88" cy="64" r="1.6" fill="#cfe0ff" />
+              <circle cx="340" cy="62" r="1.8" fill="#cfe0ff" />
+              <circle cx="380" cy="96" r="1.4" fill="#cfe0ff" />
+            </g>
+
+            <!-- sun -->
+            <g id="sunWrap" transform="translate(310 42)">
+              <g id="sun">
+                <circle cx="0" cy="0" r="32" fill="url(#sunGrad)" />
+                <g
+                  id="sunRays"
+                  stroke="#ffd36a"
+                  stroke-width="4"
+                  stroke-linecap="round"
+                  opacity=".9"
+                >
+                  <path d="M0 -52 V-40" />
+                  <path d="M0 40 V52" />
+                  <path d="M-52 0 H-40" />
+                  <path d="M40 0 H52" />
+                  <path d="M-38 -38 L-28 -28" />
+                  <path d="M28 28 L38 38" />
+                  <path d="M-38 38 L-28 28" />
+                  <path d="M28 -28 L38 -38" />
+                </g>
+              </g>
+            </g>
+
+            <!-- ground -->
+            <path
+              d="M40 350 C120 320, 280 320, 380 350 L380 420 L40 420 Z"
+              fill="#1a2a45"
+            />
+
+            <!-- pot -->
+            <g transform="translate(130 262)">
+              <path
+                d="M20 40 H140 L125 140 H35 Z"
+                fill="#b66a44"
+                opacity=".95"
+              />
+              <path d="M12 40 H148 L152 70 H8 Z" fill="#d08158" />
+              <path
+                d="M40 92 C70 72, 110 72, 140 92"
+                fill="none"
+                stroke="rgba(255,255,255,.25)"
+                stroke-width="6"
+                filter="url(#soft)"
+              />
+            </g>
+
+            <!-- plant (grouped so animations don't detach the head) -->
+            <g id="plant">
+              <!-- stem -->
+              <path
+                id="stem"
+                d="M210 310 C208 260, 210 220, 210 170 C210 132, 208 104, 206 78"
+                fill="none"
+                stroke="url(#stemGrad)"
+                stroke-width="16"
+                stroke-linecap="round"
+              />
+
+              <!-- leaves -->
+              <path
+                id="leafL"
+                d="M200 210 C150 190, 112 210, 112 250 C112 290, 164 292, 196 260"
+                fill="url(#leafGrad)"
+              />
+              <path
+                id="leafR"
+                d="M220 190 C270 170, 308 190, 308 232 C308 276, 256 280, 224 244"
+                fill="url(#leafGrad)"
+              />
+
+              <!-- plant face -->
+              <g transform="translate(178 92)">
+                <g id="face">
+                  <circle cx="32" cy="32" r="36" fill="#2abf68" opacity=".95" />
+                  <circle cx="20" cy="28" r="6" fill="#0b1220" />
+                  <circle cx="44" cy="28" r="6" fill="#0b1220" />
+                  <path
+                    id="mouth"
+                    d="M18 46 C24 54, 40 54, 46 46"
+                    fill="none"
+                    stroke="#0b1220"
+                    stroke-width="6"
+                    stroke-linecap="round"
+                  />
+                </g>
+              </g>
+            </g>
+
+            <!-- floating molecules (purely decorative) -->
+            <g id="molecules" opacity=".55">
+              <circle cx="70" cy="120" r="10" fill="#cfe0ff" opacity=".25" />
+              <text
+                x="70"
+                y="125"
+                text-anchor="middle"
+                font-size="12"
+                fill="#cfe0ff"
+              >
+                CO₂
+              </text>
+              <circle cx="60" cy="200" r="10" fill="#cfe0ff" opacity=".18" />
+              <text
+                x="60"
+                y="205"
+                text-anchor="middle"
+                font-size="12"
+                fill="#cfe0ff"
+              >
+                H₂O
+              </text>
+              <circle cx="350" cy="190" r="10" fill="#cfe0ff" opacity=".18" />
+              <text
+                x="350"
+                y="195"
+                text-anchor="middle"
+                font-size="12"
+                fill="#cfe0ff"
+              >
+                O₂
+              </text>
+            </g>
+
+            <!-- burst particles when collecting -->
+            <g id="burst" aria-hidden="true">
+              <g transform="translate(210 258)">
+                <g class="p">
+                  <circle cx="-64" cy="0" r="12" fill="#cfe0ff" opacity=".22" />
+                  <text
+                    x="-64"
+                    y="5"
+                    text-anchor="middle"
+                    font-size="12"
+                    fill="#cfe0ff"
+                  >
+                    CO₂
+                  </text>
+                </g>
+              </g>
+              <g transform="translate(210 258)">
+                <g class="p">
+                  <circle cx="0" cy="0" r="12" fill="#cfe0ff" opacity=".18" />
+                  <text
+                    x="0"
+                    y="5"
+                    text-anchor="middle"
+                    font-size="12"
+                    fill="#cfe0ff"
+                  >
+                    H₂O
+                  </text>
+                </g>
+              </g>
+              <g transform="translate(210 258)">
+                <g class="p">
+                  <circle cx="64" cy="0" r="12" fill="#ffd36a" opacity=".18" />
+                  <text
+                    x="64"
+                    y="5"
+                    text-anchor="middle"
+                    font-size="12"
+                    fill="#ffd36a"
+                  >
+                    Гэрэл
+                  </text>
+                </g>
+              </g>
+            </g>
+          </svg>
+          <div class="sr-only" id="liveHint" aria-live="polite"></div>
+        </section>
+      </div>
+
+      <noscript>
+        <div class="card" role="note" style="margin-top: 14px">
+          JavaScript унтраалттай байна. Энэ мини‑тоглоом ажиллахын тулд JS
+          шаардлагатай. Гэхдээ санаа нь:
+          <strong>6 CO₂ + 6 H₂O + гэрэл → 1 глюкоз + 6 O₂</strong>.
+        </div>
+      </noscript>
+    </main>
+
+    <script>
+      (function () {
+        const collectBtn = document.getElementById("collectBtn");
+        const resetBtn = document.getElementById("resetBtn");
+
+        const plantSvg = document.getElementById("plantSvg");
+
+        const co2Value = document.getElementById("co2Value");
+        const waterValue = document.getElementById("waterValue");
+        const lightValue = document.getElementById("lightValue");
+        const glucoseValue = document.getElementById("glucoseValue");
+        const o2Value = document.getElementById("o2Value");
+        const pressValue = document.getElementById("pressValue");
+
+        const co2Need = document.getElementById("co2Need");
+        const waterNeed = document.getElementById("waterNeed");
+        const lightNeed = document.getElementById("lightNeed");
+        const co2Bar = document.getElementById("co2Bar");
+        const waterBar = document.getElementById("waterBar");
+        const lightBar = document.getElementById("lightBar");
+
+        const statusBox = document.getElementById("statusBox");
+        const statusMsg = document.getElementById("statusMsg");
+        const statusSub = document.getElementById("statusSub");
+        const moodText = document.getElementById("moodText");
+        const liveHint = document.getElementById("liveHint");
+
+        const mouth = document.getElementById("mouth");
+
+        const RECIPE = 6;
+        const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
+        const nowMs = () =>
+          typeof performance !== "undefined" ? performance.now() : Date.now();
+
+        const state = {
+          co2: 0,
+          water: 0,
+          light: 0,
+          glucose: 0,
+          o2: 0,
+          presses: 0,
+          lastGlucoseAt: -Infinity,
+        };
+
+        function setMouth(mode) {
+          // mode: 'happy' | 'neutral' | 'sad'
+          if (mode === "happy") {
+            mouth.setAttribute("d", "M18 44 C24 56, 40 56, 46 44");
+            return;
+          }
+          if (mode === "sad") {
+            mouth.setAttribute("d", "M18 54 C24 42, 40 42, 46 54");
+            return;
+          }
+          mouth.setAttribute("d", "M18 50 C26 50, 38 50, 46 50");
+        }
+
+        function craftWhilePossible() {
+          let crafted = 0;
+          while (
+            state.co2 >= RECIPE &&
+            state.water >= RECIPE &&
+            state.light >= RECIPE
+          ) {
+            state.co2 -= RECIPE;
+            state.water -= RECIPE;
+            state.light -= RECIPE;
+            state.glucose += 1;
+            state.o2 += 6;
+            crafted += 1;
+          }
+          if (crafted > 0) {
+            state.lastGlucoseAt = nowMs();
+            liveHint.textContent = `Фотосинтез амжилттай! +${crafted} глюкоз, +${
+              crafted * 6
+            } O₂.`;
+          }
+          return crafted;
+        }
+
+        let burstTimer = 0;
+        let happyTimer = 0;
+
+        function triggerBurst() {
+          if (!plantSvg) return;
+          plantSvg.classList.remove("is-bursting");
+          // Force reflow so restarting animation works reliably
+          void plantSvg.getBoundingClientRect();
+          plantSvg.classList.add("is-bursting");
+          window.clearTimeout(burstTimer);
+          burstTimer = window.setTimeout(() => {
+            plantSvg.classList.remove("is-bursting");
+          }, 750);
+        }
+
+        function triggerHappyPulse() {
+          if (!plantSvg) return;
+          plantSvg.classList.remove("is-happy");
+          void plantSvg.getBoundingClientRect();
+          plantSvg.classList.add("is-happy");
+          window.clearTimeout(happyTimer);
+          happyTimer = window.setTimeout(() => {
+            plantSvg.classList.remove("is-happy");
+          }, 1100);
+        }
+
+        function updateUI() {
+          co2Value.textContent = String(state.co2);
+          waterValue.textContent = String(state.water);
+          lightValue.textContent = String(state.light);
+          glucoseValue.textContent = String(state.glucose);
+          o2Value.textContent = String(state.o2);
+          pressValue.textContent = String(state.presses);
+
+          const c = clamp(state.co2, 0, RECIPE);
+          const w = clamp(state.water, 0, RECIPE);
+          const l = clamp(state.light, 0, RECIPE);
+
+          co2Need.textContent = `${c}/${RECIPE}`;
+          waterNeed.textContent = `${w}/${RECIPE}`;
+          lightNeed.textContent = `${l}/${RECIPE}`;
+
+          co2Bar.style.width = `${(c / RECIPE) * 100}%`;
+          waterBar.style.width = `${(w / RECIPE) * 100}%`;
+          lightBar.style.width = `${(l / RECIPE) * 100}%`;
+
+          // Mood: happy if crafted recently; sad if far from recipe; else neutral.
+          const timeSinceGlucose = nowMs() - state.lastGlucoseAt;
+          const minTriplet = Math.min(state.co2, state.water, state.light);
+
+          let mood = "neutral";
+          if (timeSinceGlucose < 2500) mood = "happy";
+          else if (minTriplet < 2 && state.glucose === 0) mood = "sad";
+
+          moodText.textContent =
+            mood === "happy"
+              ? "Инээмсэглэж байна"
+              : mood === "sad"
+              ? "Гунигтай"
+              : "Энгийн";
+          setMouth(mood);
+
+          statusBox.classList.remove("good", "bad");
+          if (mood === "happy") statusBox.classList.add("good");
+          if (mood === "sad") statusBox.classList.add("bad");
+
+          if (mood === "happy") {
+            statusMsg.textContent = "Ургамал глюкоз үүсгэлээ!";
+            statusSub.textContent =
+              "Одоо илүү орц цуглуулаад дахин фотосинтез хийлгээрэй.";
+            return;
+          }
+
+          const needCo2 = Math.max(0, RECIPE - clamp(state.co2, 0, RECIPE));
+          const needW = Math.max(0, RECIPE - clamp(state.water, 0, RECIPE));
+          const needL = Math.max(0, RECIPE - clamp(state.light, 0, RECIPE));
+          const totalNeed = needCo2 + needW + needL;
+
+          if (totalNeed === 0) {
+            statusMsg.textContent = "Бэлэн боллоо — фотосинтез эхэлнэ!";
+            statusSub.textContent =
+              "Орц хангалттай. Удалгүй глюкоз автоматаар нэмэгдэнэ.";
+          } else {
+            statusMsg.textContent = "Нөөцөө цуглуулаарай";
+            statusSub.textContent = `Дараагийн глюкоз хийхэд: CO₂ +${needCo2}, H₂O +${needW}, гэрэл +${needL} хэрэгтэй.`;
+          }
+        }
+
+        function collectOnce() {
+          state.co2 += 1;
+          state.water += 1;
+          state.light += 1;
+          state.presses += 1;
+
+          triggerBurst();
+
+          const crafted = craftWhilePossible();
+          if (crafted === 0) {
+            liveHint.textContent = "Нөөц нэмэгдлээ: CO₂ +1, H₂O +1, гэрэл +1.";
+          }
+
+          if (crafted > 0) triggerHappyPulse();
+
+          updateUI();
+        }
+
+        function resetAll() {
+          state.co2 = 0;
+          state.water = 0;
+          state.light = 0;
+          state.glucose = 0;
+          state.o2 = 0;
+          state.presses = 0;
+          state.lastGlucoseAt = -Infinity;
+          liveHint.textContent = "Тоглоом дахин эхэллээ.";
+          if (plantSvg) {
+            plantSvg.classList.remove("is-bursting", "is-happy");
+          }
+          updateUI();
+        }
+
+        collectBtn.addEventListener("click", collectOnce);
+        resetBtn.addEventListener("click", resetAll);
+
+        window.addEventListener("keydown", (e) => {
+          if (e.repeat) return;
+          const k = e.key;
+          if (k === "n" || k === "N") {
+            e.preventDefault();
+            collectOnce();
+          }
+        });
+
+        updateUI();
+      })();
+    </script>
+  </body>
+</html>
